@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RadioDept.</title>
+    
+    <!-- Load React, ReactDOM, and Babel -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; padding: 0; background-color: #111111; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef, useEffect } = React;
+
+        const THEMES = {
+          red: { text: "text-[#ff3333]", bg: "bg-[#ff3333]", border: "border-[#ff3333]" },
+          blue: { text: "text-[#3366ff]", bg: "bg-[#3366ff]", border: "border-[#3366ff]" },
+          amber: { text: "text-[#ffcc00]", bg: "bg-[#ffcc00]", border: "border-[#ffcc00]" },
+          green: { text: "text-[#00ff66]", bg: "bg-[#00ff66]", border: "border-[#00ff66]" },
+          purple: { text: "text-[#9d4edd]", bg: "bg-[#9d4edd]", border: "border-[#9d4edd]" }
+        };
+
+        const US_INDIE_STATIONS = [
+          { id: "s-kexp", name: "KEXP", freq: "90.3", location: { cityName: "Seattle", stateCode: "WA" }, streams: [{ url: "https://kexp-mp3-128.streamguys1.com/kexp128.mp3" }], tags: ["Alternative", "Live"] },
+          { id: "s-kcrw", name: "KCRW", freq: "89.9", location: { cityName: "Santa Monica", stateCode: "CA" }, streams: [{ url: "https://kcrw.streamguys1.com/kcrw_192k_mp3_on_air" }], tags: ["Eclectic", "Culture"] },
+          { id: "s-kcmp", name: "The Current", freq: "89.3", location: { cityName: "St. Paul", stateCode: "MN" }, streams: [{ url: "https://current.stream.publicradio.org/kcmp.mp3" }], tags: ["Indie Pop", "Alt-Rock"] },
+          { id: "s-wxpn", name: "WXPN", freq: "88.5", location: { cityName: "Philadelphia", stateCode: "PA" }, streams: [{ url: "https://wxpnhi.xpn.org/xpnhi" }], tags: ["Adult Alt", "Roots"] },
+          { id: "s-kutx", name: "KUTX", freq: "98.9", location: { cityName: "Austin", stateCode: "TX" }, streams: [{ url: "https://kutx.streamguys1.com/kutx-free" }], tags: ["Texas Indie", "Local"] },
+          { id: "s-wfuv", name: "WFUV", freq: "90.7", location: { cityName: "New York", stateCode: "NY" }, streams: [{ url: "https://wfuv-onair.streamguys1.com/onair-hi" }], tags: ["Eclectic", "Discovery"] },
+          { id: "s-kvoq", name: "Indie 102.3", freq: "102.3", location: { cityName: "Denver", stateCode: "CO" }, streams: [{ url: "https://cpr-kvoq-indie.streamguys1.com/kvoq-indie" }], tags: ["Indie Rock", "Modern"] },
+          { id: "s-kxt", name: "KXT", freq: "91.7", location: { cityName: "Dallas", stateCode: "TX" }, streams: [{ url: "https://kera-ice.streamguys1.com/kxtlive" }], tags: ["Alt Rock", "Acoustic"] },
+          { id: "s-wfmu", name: "WFMU", freq: "91.1", location: { cityName: "Jersey City", stateCode: "NJ" }, streams: [{ url: "https://stream0.wfmu.org/freeform-128k" }], tags: ["Freeform", "Experimental"] },
+          { id: "s-wnrn", name: "WNRN", freq: "91.9", location: { cityName: "Charlottesville", stateCode: "VA" }, streams: [{ url: "https://wnrn.streamguys1.com/wnrn-mp3" }], tags: ["Independent", "Americana"] },
+          { id: "s-wtmd", name: "WTMD", freq: "89.7", location: { cityName: "Baltimore", stateCode: "MD" }, streams: [{ url: "https://wtmd-ice.streamguys1.com/wtmd.mp3" }], tags: ["Alt", "Discovery"] },
+          { id: "s-wfpk", name: "WFPK", freq: "91.9", location: { cityName: "Louisville", stateCode: "KY" }, streams: [{ url: "https://lpm.streamguys1.com/wfpk-web" }], tags: ["Independent", "Rock"] },
+          { id: "s-bagel", name: "BAGeL Radio", freq: "LIVE", location: { cityName: "San Francisco", stateCode: "CA" }, streams: [{ url: "https://ice1.somafm.com/bagel-128-mp3" }], tags: ["Garage", "Post-Punk"] },
+          { id: "s-wunc", name: "WUNC Music", freq: "LIVE", location: { cityName: "Chapel Hill", stateCode: "NC" }, streams: [{ url: "https://wunc-ice.streamguys1.com/wunc-music" }], tags: ["Indie Pop", "Alt-Country"] },
+          { id: "s-wyms", name: "Radio MKE", freq: "88.9", location: { cityName: "Milwaukee", stateCode: "WI" }, streams: [{ url: "https://tektite.streamguys1.com:5145/88nine128" }], tags: ["Urban Alt", "Indie"] }
+        ];
+
+        function App() {
+          const [displayStations, setDisplayStations] = useState(US_INDIE_STATIONS.slice(0, 5));
+          const [currentStation, setCurrentStation] = useState(US_INDIE_STATIONS[0]);
+          const [isPlaying, setIsPlaying] = useState(false);
+          const [isLoading, setIsLoading] = useState(false);
+          const [playerError, setPlayerError] = useState(null);
+          const [volume, setVolume] = useState(0.8);
+          const audioRef = useRef(null);
+
+          const RefreshIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>;
+          const PlayIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>;
+          const PauseIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>;
+          const PrevIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>;
+          const NextIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>;
+
+          const refreshStations = () => {
+            let pool = US_INDIE_STATIONS.filter(station => !displayStations.some(d => d.id === station.id));
+            for (let i = pool.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [pool[i], pool[j]] = [pool[j], pool[i]];
+            }
+            setDisplayStations(pool.slice(0, 5));
+          };
+
+          const handlePlayStation = (station) => {
+            setPlayerError(null);
+            setCurrentStation(station);
+            setIsLoading(true);
+            
+            if (audioRef.current) {
+              audioRef.current.pause();
+              audioRef.current.src = station.streams[0].url;
+              audioRef.current.load();
+              
+              audioRef.current.play()
+                .then(() => {
+                  setIsPlaying(true);
+                  setIsLoading(false);
+                })
+                .catch((error) => {
+                  setIsLoading(false);
+                  if (error.name === 'AbortError') return;
+                  setIsPlaying(false);
+                  setPlayerError("STATION OFFLINE");
+                });
+            }
+          };
+
+          const togglePlay = () => {
+            if (!audioRef.current) return;
+            
+            if (isPlaying) {
+              audioRef.current.pause();
+              setIsPlaying(false);
+            } else {
+              if (!audioRef.current.src || !audioRef.current.src.includes(currentStation.streams[0].url)) {
+                handlePlayStation(currentStation);
+                return;
+              }
+
+              setIsLoading(true);
+              setPlayerError(null);
+              audioRef.current.play()
+                .then(() => {
+                  setIsPlaying(true);
+                  setIsLoading(false);
+                })
+                .catch((error) => {
+                  setIsLoading(false);
+                  if (error.name !== 'AbortError') {
+                    setPlayerError("STATION OFFLINE");
+                  }
+                });
+            }
+          };
+
+          const handleVolumeChange = (e) => {
+            const val = parseFloat(e.target.value);
+            setVolume(val);
+            if (audioRef.current) audioRef.current.volume = val;
+          };
+
+          const playOffset = (offset) => {
+            if (!displayStations.length) return;
+            const idx = displayStations.findIndex(s => s.id === currentStation?.id);
+            let nextIdx = (idx + offset) % displayStations.length;
+            if (nextIdx < 0) nextIdx = displayStations.length - 1;
+            handlePlayStation(displayStations[nextIdx]);
+          };
+
+          const renderRulerTicks = () => {
+            let baseFreq = parseFloat(currentStation.freq);
+            if (isNaN(baseFreq)) baseFreq = 90.0;
+            const ticks = [];
+            for (let i = -15; i <= 15; i++) {
+              const isMajor = i % 5 === 0;
+              ticks.push(
+                <div key={i} className="flex flex-col items-center justify-end h-full">
+                  <div className={`w-[2px] bg-white/40 rounded-full ${isMajor ? 'h-4' : 'h-2'}`}></div>
+                  {isMajor && <span className="text-[10px] text-white/50 font-bold mt-1 absolute bottom-[-18px]">{(baseFreq + (i * 0.2)).toFixed(1)}</span>}
+                </div>
+              );
+            }
+            return ticks;
+          };
+
+          return (
+            <div className="min-h-screen bg-[#111111] flex items-center justify-center p-4 md:p-8 font-sans selection:bg-black selection:text-white">
+              <div className="bg-[#EBECED] w-full max-w-[900px] rounded-[32px] p-3 md:p-4 shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_2px_0_rgba(255,255,255,0.7)] flex flex-col md:flex-row gap-4 items-stretch">
+                
+                <div className="w-full md:w-1/2 bg-[#1C1C1E] rounded-[24px] p-3 flex flex-col h-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]">
+                  <div className="flex gap-2 h-[220px]">
+                    <div className="bg-[#A4C9DD] rounded-[18px] w-5/12 p-4 flex flex-col justify-between shadow-inner relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-10 -mt-10 blur-xl pointer-events-none"></div>
+                      <div className="flex items-center gap-1.5 bg-[#1C1C1E] text-white self-start px-2.5 py-1 rounded-md shadow-sm">
+                        <span className="text-[10px] font-black tracking-wider">FM</span>
+                        <span className="text-[10px] font-bold text-gray-300 border-l border-gray-600 pl-1.5">US</span>
+                      </div>
+                      <div>
+                        <h2 className="text-4xl lg:text-5xl font-bold tracking-tighter text-[#1C1C1E] leading-none mb-1">
+                          {currentStation.freq === 'LIVE' ? 'NET' : currentStation.freq}
+                        </h2>
+                        <span className="text-sm font-bold text-[#1C1C1E]/60 tracking-widest">{currentStation.freq === 'LIVE' ? 'STREAM' : 'MHz'}</span>
+                      </div>
+                    </div>
+
+                    <div className="w-7/12 p-4 flex flex-col justify-between text-white">
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`w-1.5 h-1.5 rounded-full ${isLoading ? 'bg-amber-400 animate-ping' : isPlaying ? 'bg-red-500 animate-pulse' : 'bg-gray-500'}`}></span>
+                          <span className="text-[10px] font-bold text-gray-400 tracking-widest uppercase">
+                            {playerError ? 'ERROR' : isLoading ? 'CONNECTING...' : isPlaying ? 'NOW PLAYING' : 'READY'}
+                          </span>
+                        </div>
+                        
+                        {playerError ? (
+                          <h3 className="text-lg font-bold text-red-400 leading-tight mb-1">{playerError}</h3>
+                        ) : (
+                          <h3 className="text-2xl font-bold leading-tight mb-1 truncate">{currentStation.name}</h3>
+                        )}
+                        
+                        <p className="text-sm text-gray-400 font-medium truncate">
+                          {currentStation.location.cityName}, {currentStation.location.stateCode}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1.5 mt-4">
+                        {currentStation.tags.map((tag, idx) => (
+                          <span key={idx} className="bg-white/10 text-white/80 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="h-[70px] bg-[#2A2A2C]/60 rounded-2xl border border-white/10 shadow-inner flex items-center justify-between px-3 relative overflow-hidden mt-4">
+                    <button onClick={() => playOffset(-1)} className="p-2 text-white/40 hover:text-white hover:bg-white/10 rounded-lg transition-colors z-10"><PrevIcon /></button>
+                    
+                    <div className="flex-1 h-full relative flex items-center justify-center overflow-hidden pb-4">
+                      <div className="flex justify-between items-end w-full max-w-[280px] h-6 relative opacity-60">
+                        {renderRulerTicks()}
+                      </div>
+                      <div className="absolute w-[3px] h-[36px] bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)] z-20 top-1/2 -translate-y-1/2"></div>
+                    </div>
+
+                    <button onClick={() => playOffset(1)} className="p-2 text-white/40 hover:text-white hover:bg-white/10 rounded-lg transition-colors z-10"><NextIcon /></button>
+                  </div>
+
+                  <div className="flex justify-center items-center px-1 h-14 mt-auto pt-4 gap-8 text-white/60">
+                    <button onClick={() => playOffset(-1)} className="hover:text-white active:scale-90 transition-transform"><PrevIcon /></button>
+                    <button onClick={togglePlay} className="text-white hover:scale-110 active:scale-95 transition-transform scale-150">
+                      {isPlaying ? <PauseIcon /> : <PlayIcon />}
+                    </button>
+                    <button onClick={() => playOffset(1)} className="hover:text-white active:scale-90 transition-transform"><NextIcon /></button>
+                  </div>
+                </div>
+
+                <div className="hidden md:block w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent my-4"></div>
+
+                <div className="w-full md:w-1/2 flex flex-col justify-between h-full pl-0 md:pl-2">
+                  <div className="flex flex-col gap-4 flex-1 pt-1">
+                    <div className="flex justify-between items-center px-1 pb-2">
+                      <span className="text-sm font-bold text-black flex items-center gap-2">
+                        Top Stations <span className="text-gray-400 font-medium">· {US_INDIE_STATIONS.length}</span>
+                      </span>
+                      <button onClick={refreshStations} className="text-[10px] font-bold text-gray-500 hover:text-black uppercase tracking-widest flex items-center gap-1.5 transition-colors border border-gray-300 rounded-full px-3 py-1.5 bg-white shadow-sm hover:bg-gray-50 active:scale-95">
+                        Refresh <RefreshIcon />
+                      </button>
+                    </div>
+
+                    <div className="flex flex-col gap-2 flex-1">
+                      {displayStations.map((station) => {
+                        const isActive = currentStation.id === station.id;
+                        return (
+                          <div 
+                            key={station.id} 
+                            onClick={() => handlePlayStation(station)}
+                            className={`cursor-pointer rounded-2xl px-4 py-3 flex justify-between items-center border transition-all ${
+                              isActive 
+                                ? 'bg-white border-black shadow-[0_2px_10px_rgba(0,0,0,0.05)]' 
+                                : 'bg-white/60 border-transparent hover:bg-white border-gray-200/60 shadow-sm'
+                            }`}
+                          >
+                            <span className={`font-bold text-sm ${isActive ? 'text-black' : 'text-gray-700'}`}>
+                              {station.name}
+                            </span>
+                            <span className={`font-bold text-sm tracking-wide ${isActive ? 'text-black' : 'text-gray-500'}`}>
+                              {station.freq}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col mt-auto">
+                    <div className="w-full h-px bg-gray-300 mb-2 mt-2 md:mt-4"></div>
+                    <div className="flex items-center justify-end px-1 h-14">
+                      <div className="flex items-center gap-3 w-full justify-between">
+                        <span className="text-[10px] font-bold text-gray-400 tracking-widest uppercase ml-1">Output Vol</span>
+                        <input 
+                          type="range" min="0" max="1" step="0.01" value={volume} onChange={handleVolumeChange}
+                          className="w-48 h-1.5 bg-gray-300 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-gray-300 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-sm cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <audio ref={audioRef} />
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
